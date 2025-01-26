@@ -1,0 +1,169 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tebak Angka</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+    />
+  </head>
+  <body
+    class="bg-gray-100 font-roboto flex flex-col items-center justify-center min-h-screen"
+  >
+    <div class="absolute top-4 right-4">
+      <button
+        class="border border-gray-400 text-gray-600 px-4 py-2 rounded"
+        onclick="window.location.href='score.html'"
+      >
+        Skor
+      </button>
+    </div>
+    <h1 class="text-3xl font-bold mb-4">Tebak Angka!</h1>
+    <p class="text-gray-500 mb-8">
+      tebak angka 1 hingga 100 pada kolom input, lalu submit. kesempatan hanya
+      sebanyak 10 kali.
+    </p>
+    <div class="bg-white p-8 rounded shadow-md w-80 text-center">
+      <input
+        id="createTebakan"
+        type="number"
+        min="1"
+        max="100"
+        class="text-4xl text-center border-b-2 border-gray-300 focus:outline-none mb-4"
+        placeholder="00"
+      />
+      <button id="saveBtn" onclick="tambah()" class="bg-blue-800 text-white px-4 py-2 rounded">
+        Tebak!
+      </button>
+    </div>
+    <p class="mt-4">
+      Kesempatan :
+      <span id="dataRiwayat" class="font-bold text-yellow-500">10</span>
+    </p>
+
+    <div class="bg-white p-8 rounded shadow-md w-80 mt-8">
+      <h2 class="text-xl font-bold mb-4">Daftar Tebakan</h2>
+      <ul id="dataTebakan" class="list-disc list-inside">
+        <!-- List of guesses will be appended here -->
+      </ul>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+      const riwayatStore = "riwayat";
+      
+        function initializeDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("TebakanDB", 1);
+    
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(riwayatStore)) {
+                db.createObjectStore(riwayatStore, { keyPath: "id", autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            resolve(event.target.result);
+        };
+
+        request.onerror = (event) => {
+            reject(event.target.error);
+        };
+    });
+}
+initializeDB()
+function tambah() {
+  console.log("fungsi dipanggil")
+  const inputan = document.getElementById("createTebakan")
+  const hasilInputan = parseInt(inputan.value)
+    initializeDB().then((db) => {
+        const transaction = db.transaction(riwayatStore, "readwrite");
+        const store = transaction.objectStore(riwayatStore);
+        console.log(hasilInputan);
+        store.add({ input: hasilInputan });
+        transaction.oncomplete = () => {
+            displayData();
+        };
+
+        transaction.onerror = (event) => {
+            console.error("Gagal menambahkan data ke store baru:", event.target.error);
+        };
+    });
+}
+
+function fetchData() {
+            initializeDB().then((db) => {
+                const transaction = db.transaction(riwayatStore, "readonly");
+                const store = transaction.objectStore(riwayatStore);
+
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    const data = event.target.result;
+                    displayData(data);
+                };
+
+                request.onerror = (event) => {
+                    console.error("Gagal mengambil data:", event.target.error);
+                };
+            }).catch((error) => {
+                console.error("Terjadi kesalahan:", error);
+            });
+        }
+
+        function displayData(data) {
+          
+          console.log(data)
+            const dataList = document.getElementById("dataTebakan");
+            dataList.innerHTML = ""; 
+            data.forEach((item) => {
+              const listItem = document.createElement("li");
+                listItem.classList.add("data-item");
+
+                const spanItem = document.createElement("span");
+                spanItem.textContent = `Tebakan: ${item.input}`;
+
+                // Membuat tombol hapus
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Hapus";
+                deleteButton.classList.add("delete-button");
+                deleteButton.onclick = () => deleteTebakan(item.id); // Panggil fungsi hapus dengan id item
+
+                // Gabungkan elemen data dan tombol dalam satu container
+                listItem.appendChild(spanItem);
+                listItem.appendChild(deleteButton);
+
+                // Tambahkan item ke dalam daftar
+                dataList.appendChild(listItem);
+
+              
+                
+            });
+        }
+
+        window.onload = fetchData;
+
+        async function deleteTebakan(id) {
+    const db = await initializeDB();
+    const transaction = db.transaction(riwayatStore, "readwrite");
+    const store = transaction.objectStore(riwayatStore);
+
+    store.delete(id);
+
+    transaction.oncomplete = () => {
+        displayData();
+    };
+
+    transaction.onerror = (event) => {
+        console.error("Error deleting item from IndexedDB:", event.target.error);
+    }
+        }
+
+    </script>
+
+  </body>
+</html>
