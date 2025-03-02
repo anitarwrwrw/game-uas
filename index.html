@@ -12,14 +12,6 @@
   <body
     class="bg-gray-100 font-roboto flex flex-col items-center justify-center min-h-screen"
   >
-    <div class="absolute top-4 right-4">
-      <button
-        class="border border-gray-400 text-gray-600 px-4 py-2 rounded"
-        onclick="window.location.href='score.html'"
-      >
-        Skor
-      </button>
-    </div>
     <h1 class="text-3xl font-bold mb-4">Tebak Angka!</h1>
     <p class="text-gray-500 mb-8">
       tebak angka 1 hingga 100 pada kolom input, lalu submit. kesempatan hanya
@@ -38,15 +30,25 @@
         Tebak!
       </button>
     </div>
-    <p class="mt-4">
+    <p id="kesempatan" class="mt-4">
       Kesempatan :
-      <span id="dataRiwayat" class="font-bold text-yellow-500">10</span>
+      <span class="font-bold text-yellow-500">10</span>
     </p>
+
+    <button id="reset" class="bg-green-500 text-white px-4 py-2 rounded mb-12">Reset</button>
+    <div class="d-flex justify-content-between mb-4 mt-4">
+      <button id="sync-to-server" class="btn btn-success w-50 me-2">⬆️ Sinkron ke Server</button>
+      <button id="sync-from-server" class="btn btn-warning w-50">⬇️ Sinkron dari Server</button>
+  </div>
+
 
     <div class="bg-white p-8 rounded shadow-md w-80 mt-8">
       <h2 class="text-xl font-bold mb-4">Daftar Tebakan</h2>
       <ul id="dataTebakan" class="list-disc list-inside">
         <!-- List of guesses will be appended here -->
+         <li>
+          <span id="dataRiwayat"></span>
+        </li>
       </ul>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -76,17 +78,40 @@
     });
 }
 initializeDB()
+const tampilKesempatan = document.getElementById("kesempatan");
+
+
+let kesempatan = localStorage.getItem('kesempatan');
+
+
+if (!kesempatan) {
+  kesempatan = 10;
+  localStorage.setItem('kesempatan', kesempatan);
+}
+
+tampilKesempatan.querySelector("span").textContent = kesempatan;
+
 function tambah() {
   console.log("fungsi dipanggil")
   const inputan = document.getElementById("createTebakan")
   const hasilInputan = parseInt(inputan.value)
+  const tampilKesempatan = document.getElementById("kesempatan")
+
+  if (hasilInputan){
+    if(kesempatan > 0 ) {
+      kesempatan -= 1;
+      localStorage.setItem('kesempatan', kesempatan);
+      tampilKesempatan.querySelector("span").textContent = kesempatan;
+    }
+  }
     initializeDB().then((db) => {
         const transaction = db.transaction(riwayatStore, "readwrite");
         const store = transaction.objectStore(riwayatStore);
         console.log(hasilInputan);
         store.add({ input: hasilInputan });
         transaction.oncomplete = () => {
-            displayData();
+            // Refresh halaman
+location.reload();
         };
 
         transaction.onerror = (event) => {
@@ -121,27 +146,15 @@ function fetchData() {
             const dataList = document.getElementById("dataTebakan");
             dataList.innerHTML = ""; 
             data.forEach((item) => {
-              const listItem = document.createElement("li");
-                listItem.classList.add("data-item");
-
-                const spanItem = document.createElement("span");
-                spanItem.textContent = `Tebakan: ${item.input}`;
-
-                // Membuat tombol hapus
-                const deleteButton = document.createElement("button");
-                deleteButton.textContent = "Hapus";
-                deleteButton.classList.add("delete-button");
-                deleteButton.onclick = () => deleteTebakan(item.id); // Panggil fungsi hapus dengan id item
-
-                // Gabungkan elemen data dan tombol dalam satu container
-                listItem.appendChild(spanItem);
-                listItem.appendChild(deleteButton);
-
-                // Tambahkan item ke dalam daftar
-                dataList.appendChild(listItem);
-
-              
-                
+            const listItem = `
+            <li class="flex items-center justify-between">
+            
+              <span>Tebakan: ${item.input}</span>
+              <button onclick="deleteTebakan(${item.id})" class="bg-rose-500 text-white font-bold py-2 px-4 mb-4 ml-10 rounded">Hapus</button>
+          
+            </li>
+            `;
+            dataList.innerHTML += listItem;             
             });
         }
 
@@ -155,13 +168,50 @@ function fetchData() {
     store.delete(id);
 
     transaction.oncomplete = () => {
-        displayData();
+        // displayData();
+        location.reload();
     };
 
     transaction.onerror = (event) => {
         console.error("Error deleting item from IndexedDB:", event.target.error);
     }
         }
+       const resetKesempatan = document.getElementById("reset");
+        function resetLocalStorage() {
+          localStorage.setItem('kesempatan', 10);
+          tampilKesempatan.querySelector("span").textContent = kesempatan;
+          location.reload();
+          
+}
+resetKesempatan.addEventListener("click", resetLocalStorage)
+
+document.getElementById("sync-from-server").addEventListener("click", function() {
+            $.ajax({
+    url: "http://localhost:8000/api/tebak/sync",
+    method: "GET",
+    headers: { "Accept": "application/json" },
+    success: (serverData) => {
+        const transaction = db.transaction(["kesempatan"], "readwrite");
+        const store = transaction.objectStore("kesempatan");
+
+        serverData.forEach(item => {
+            const { type, duration, calories } = item;
+            store.put});
+
+transaction.oncomplete = () => {
+    displayHistory();
+    alert("✅ Data dari server berhasil disinkron.");
+};
+transaction.onerror = () => alert("❌ Gagal sinkron dari server.");
+},
+error: (xhr) => {
+console.error(xhr.responseText);
+alert("❌ Gagal sinkron dari server.");
+}
+});
+
+});
+ucs-irxx-nbk
 
     </script>
 
