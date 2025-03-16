@@ -1,22 +1,22 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tebak Angka</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
-    />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
   <body
-    class="bg-gray-100 font-roboto flex flex-col items-center justify-center min-h-screen"
+    class="bg-gray-100 font-sans flex flex-col items-center justify-center min-h-screen"
   >
     <h1 class="text-3xl font-bold mb-4">Tebak Angka!</h1>
     <p class="text-gray-500 mb-8">
-      tebak angka 1 hingga 100 pada kolom input, lalu submit. kesempatan hanya
-      sebanyak 10 kali.
+      Tebak angka 1 hingga 100, kesempatan 10 kali.
     </p>
+
     <div class="bg-white p-8 rounded shadow-md w-80 text-center">
       <input
         id="createTebakan"
@@ -26,194 +26,208 @@
         class="text-4xl text-center border-b-2 border-gray-300 focus:outline-none mb-4"
         placeholder="00"
       />
-      <button id="saveBtn" onclick="tambah()" class="bg-blue-800 text-white px-4 py-2 rounded">
+      <button
+        onclick="tambah()"
+        class="bg-blue-800 text-white px-4 py-2 rounded"
+      >
         Tebak!
       </button>
     </div>
+
     <p id="kesempatan" class="mt-4">
-      Kesempatan :
-      <span class="font-bold text-yellow-500">10</span>
+      Kesempatan: <span class="font-bold text-yellow-500">10</span>
     </p>
+    <button id="reset" class="bg-green-500 text-white px-4 py-2 rounded mb-4">
+      Reset
+    </button>
 
-    <button id="reset" class="bg-green-500 text-white px-4 py-2 rounded mb-12">Reset</button>
-    <div class="d-flex justify-content-between mb-4 mt-4">
-      <button id="sync-to-server" class="btn btn-success w-50 me-2">⬆️ Sinkron ke Server</button>
-      <button id="sync-from-server" class="btn btn-warning w-50">⬇️ Sinkron dari Server</button>
-  </div>
-
+    <div class="flex gap-2">
+      <button
+        id="sync-to-server"
+        class="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        ⬆️ Sinkron ke Server
+      </button>
+      <button
+        id="sync-from-server"
+        class="bg-yellow-600 text-white px-4 py-2 rounded"
+      >
+        ⬇️ Sinkron dari Server
+      </button>
+    </div>
 
     <div class="bg-white p-8 rounded shadow-md w-80 mt-8">
       <h2 class="text-xl font-bold mb-4">Daftar Tebakan</h2>
-      <ul id="dataTebakan" class="list-disc list-inside">
-        <!-- List of guesses will be appended here -->
-         <li>
-          <span id="dataRiwayat"></span>
-        </li>
-      </ul>
+      <ul id="dataTebakan" class="list-disc list-inside"></ul>
     </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
       const riwayatStore = "riwayat";
-      
-        function initializeDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open("TebakanDB", 1);
-    
 
-        request.onupgradeneeded = (event) => {
+      function initializeDB() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open("TebakanDB", 2);
+
+          request.onupgradeneeded = (event) => {
             const db = event.target.result;
             if (!db.objectStoreNames.contains(riwayatStore)) {
-                db.createObjectStore(riwayatStore, { keyPath: "id", autoIncrement: true });
+              db.createObjectStore(riwayatStore, {
+                keyPath: "id",
+                autoIncrement: true,
+              });
             }
-        };
+          };
 
-        request.onsuccess = (event) => {
-            resolve(event.target.result);
-        };
+          request.onsuccess = (event) => resolve(event.target.result);
+          request.onerror = (event) => reject(event.target.error);
+        });
+      }
 
-        request.onerror = (event) => {
-            reject(event.target.error);
-        };
-    });
-}
-initializeDB()
-const tampilKesempatan = document.getElementById("kesempatan");
+      let kesempatan = localStorage.getItem("kesempatan") || 10;
+      localStorage.setItem("kesempatan", kesempatan);
+      document.getElementById("kesempatan").querySelector("span").textContent =
+        kesempatan;
 
+      function tambah() {
+        let targetNumber = 40;
+        const inputan = document.getElementById("createTebakan");
+        const hasilInputan = parseInt(inputan.value);
+        if (!hasilInputan) return;
 
-let kesempatan = localStorage.getItem('kesempatan');
+        if (hasilInputan) {
+          if (kesempatan > 0) {
+            if (hasilInputan != targetNumber) {
+              kesempatan--;
+              if (kesempatan == 0) {
+                Swal.fire({
+                  title: `Yeuuu Kocaggg ^-^ <br> Coba Lagii!!`,
+                  icon: "warning",
+                  draggable: true,
+                });
+                kesempatan = 10;
+              }
+              localStorage.setItem("kesempatan", kesempatan);
+              document
+                .getElementById("kesempatan")
+                .querySelector("span").textContent = kesempatan;
+            }
+          }
 
-
-if (!kesempatan) {
-  kesempatan = 10;
-  localStorage.setItem('kesempatan', kesempatan);
-}
-
-tampilKesempatan.querySelector("span").textContent = kesempatan;
-
-function tambah() {
-  console.log("fungsi dipanggil")
-  const inputan = document.getElementById("createTebakan")
-  const hasilInputan = parseInt(inputan.value)
-  const tampilKesempatan = document.getElementById("kesempatan")
-
-  if (hasilInputan){
-    if(kesempatan > 0 ) {
-      kesempatan -= 1;
-      localStorage.setItem('kesempatan', kesempatan);
-      tampilKesempatan.querySelector("span").textContent = kesempatan;
-    }
-  }
-    initializeDB().then((db) => {
-        const transaction = db.transaction(riwayatStore, "readwrite");
-        const store = transaction.objectStore(riwayatStore);
-        console.log(hasilInputan);
-        store.add({ input: hasilInputan });
-        transaction.oncomplete = () => {
-            // Refresh halaman
-location.reload();
-        };
-
-        transaction.onerror = (event) => {
-            console.error("Gagal menambahkan data ke store baru:", event.target.error);
-        };
-    });
-}
-
-function fetchData() {
-            initializeDB().then((db) => {
-                const transaction = db.transaction(riwayatStore, "readonly");
-                const store = transaction.objectStore(riwayatStore);
-
-                const request = store.getAll();
-
-                request.onsuccess = (event) => {
-                    const data = event.target.result;
-                    displayData(data);
-                };
-
-                request.onerror = (event) => {
-                    console.error("Gagal mengambil data:", event.target.error);
-                };
-            }).catch((error) => {
-                console.error("Terjadi kesalahan:", error);
-            });
+          if (hasilInputan == targetNumber) {
+            kesempatan = 10;
+            Swal.fire("Victory!");
+            localStorage.setItem("kesempatan", kesempatan);
+            document
+              .getElementById("kesempatan")
+              .querySelector("span").textContent = kesempatan;
+          }
         }
 
-        function displayData(data) {
-          
-          console.log(data)
+        initializeDB().then((db) => {
+          const transaction = db.transaction(riwayatStore, "readwrite");
+          const store = transaction.objectStore(riwayatStore);
+          store.add({ input: hasilInputan });
+
+          transaction.oncomplete = () => {
+            inputan.value = "";
+            fetchData();
+          };
+        });
+      }
+
+      function fetchData() {
+        initializeDB().then((db) => {
+          const transaction = db.transaction(riwayatStore, "readonly");
+          const store = transaction.objectStore(riwayatStore);
+          const request = store.getAll();
+
+          request.onsuccess = (event) => {
             const dataList = document.getElementById("dataTebakan");
-            dataList.innerHTML = ""; 
-            data.forEach((item) => {
-            const listItem = `
-            <li class="flex items-center justify-between">
-            
-              <span>Tebakan: ${item.input}</span>
-              <button onclick="deleteTebakan(${item.id})" class="bg-rose-500 text-white font-bold py-2 px-4 mb-4 ml-10 rounded">Hapus</button>
-          
-            </li>
-            `;
-            dataList.innerHTML += listItem;             
+            dataList.innerHTML = "";
+            event.target.result.forEach((item) => {
+              dataList.innerHTML += `
+                            <li class="flex items-center justify-between">
+                                <span>Tebakan: ${item.input}</span>
+                                <button onclick="deleteTebakan(${item.id})" class="bg-rose-500 text-white px-4 py-2 rounded mb-2 ">Hapus</button>
+                            </li>
+                        `;
             });
-        }
+          };
+        });
+      }
 
-        window.onload = fetchData;
+      function deleteTebakan(id) {
+        initializeDB().then((db) => {
+          const transaction = db.transaction(riwayatStore, "readwrite");
+          const store = transaction.objectStore(riwayatStore);
+          store.delete(id);
 
-        async function deleteTebakan(id) {
-    const db = await initializeDB();
-    const transaction = db.transaction(riwayatStore, "readwrite");
-    const store = transaction.objectStore(riwayatStore);
+          transaction.oncomplete = () => fetchData();
+        });
+      }
 
-    store.delete(id);
+      function resetLocalStorage() {
+        kesempatan = 10;
+        localStorage.setItem("kesempatan", 10);
+        document
+          .getElementById("kesempatan")
+          .querySelector("span").textContent = kesempatan;
+        fetchData();
+      }
 
-    transaction.oncomplete = () => {
-        // displayData();
-        location.reload();
-    };
+      document
+        .getElementById("reset")
+        .addEventListener("click", resetLocalStorage);
 
-    transaction.onerror = (event) => {
-        console.error("Error deleting item from IndexedDB:", event.target.error);
-    }
-        }
-       const resetKesempatan = document.getElementById("reset");
-        function resetLocalStorage() {
-          localStorage.setItem('kesempatan', 10);
-          tampilKesempatan.querySelector("span").textContent = kesempatan;
-          location.reload();
-          
-}
-resetKesempatan.addEventListener("click", resetLocalStorage)
+      document
+        .getElementById("sync-from-server")
+        .addEventListener("click", async function () {
+          try {
+            const response = await fetch(
+              "http://localhost:8000/api/tebak/sync"
+            );
+            const serverData = await response.json();
+            const db = await initializeDB();
+            const transaction = db.transaction(riwayatStore, "readwrite");
+            const store = transaction.objectStore(riwayatStore);
 
-document.getElementById("sync-from-server").addEventListener("click", function() {
-            $.ajax({
-    url: "http://localhost:8000/api/tebak/sync",
-    method: "GET",
-    headers: { "Accept": "application/json" },
-    success: (serverData) => {
-        const transaction = db.transaction(["kesempatan"], "readwrite");
-        const store = transaction.objectStore("kesempatan");
+            serverData.forEach((item) => store.put(item));
+            transaction.oncomplete = () => {
+              fetchData();
+              alert("✅ Data dari server berhasil disinkron.");
+            };
+          } catch (error) {
+            console.error("Gagal sinkron dari server:", error);
+            alert("❌ Gagal sinkron dari server.");
+          }
+        });
 
-        serverData.forEach(item => {
-            const { type, duration, calories } = item;
-            store.put});
+      document
+        .getElementById("sync-to-server")
+        .addEventListener("click", async function () {
+          const db = await initializeDB();
+          const transaction = db.transaction(riwayatStore, "readonly");
+          const store = transaction.objectStore(riwayatStore);
+          const allData = [];
 
-transaction.oncomplete = () => {
-    displayHistory();
-    alert("✅ Data dari server berhasil disinkron.");
-};
-transaction.onerror = () => alert("❌ Gagal sinkron dari server.");
-},
-error: (xhr) => {
-console.error(xhr.responseText);
-alert("❌ Gagal sinkron dari server.");
-}
-});
+          store.openCursor().onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor) {
+              allData.push(cursor.value);
+              cursor.continue();
+            } else {
+              fetch("http://localhost:8000/api/tebakan/sync", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(allData),
+              })
+                .then(() => alert("✅ Data berhasil disinkron ke server."))
+                .catch(() => alert("❌ Gagal sinkron ke server."));
+            }
+          };
+        });
 
-});
-ucs-irxx-nbk
-
+      window.onload = fetchData;
     </script>
-
   </body>
 </html>
